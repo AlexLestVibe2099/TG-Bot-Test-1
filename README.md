@@ -11,7 +11,7 @@ Telegram-бот для сбора заявок на первичную юрид�
 - Подтверждение заявки перед отправкой
 - **Supabase:** категории, менеджеры и заявки в PostgreSQL
 - Уведомление менеджеров в Telegram
-- Ответ на свободный текст в главном меню (OpenAI `gpt-4o-mini`, системный промпт в `src/config/aiSystemPrompt.js`)
+- Ответ на свободный текст в главном меню ([GigaChat](https://developers.sber.ru/docs/ru/gigachat/overview), модель `GigaChat`, промпт в `src/config/aiSystemPrompt.js`)
 - Команды `/start`, `/help`, `/cancel`
 
 ## Быстрый старт
@@ -55,13 +55,14 @@ copy .env.example .env
 | `SUPABASE_URL` | да | URL проекта Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | да | Service role key |
 | `MANAGER_CHAT_IDS` | нет* | Telegram ID менеджеров через запятую |
-| `OPENAI_API_KEY` | нет* | Ключ OpenAI для свободного текста |
-| `OPENAI_MODEL` | нет | По умолчанию `gpt-4o-mini` |
-| `OPENAI_TEMPERATURE` | нет | По умолчанию `0.3` |
-| `OPENAI_MAX_TOKENS` | нет | По умолчанию `300` |
+| `GIGACHAT_AUTH_KEY` | нет* | Ключ авторизации GigaChat API |
+| `GIGACHAT_MODEL` | нет | По умолчанию `GigaChat` |
+| `GIGACHAT_TEMPERATURE` | нет | По умолчанию `0.3` |
+| `GIGACHAT_MAX_TOKENS` | нет | По умолчанию `300` |
+| `GIGACHAT_INSECURE_SSL` | нет | `true` по умолчанию (сертификат Сбера) |
 | `CATALOG_CACHE_TTL_MS` | нет | Кэш категорий/менеджеров (мс) |
 
-\* Без `OPENAI_API_KEY` бот отвечает шаблоном, без LLM.
+\* Без `GIGACHAT_AUTH_KEY` бот отвечает шаблоном, без LLM.
 
 > **Важно:** не задавайте `BOT_TOKEN` в переменных среды Windows — иначе может перекрыться `.env`.
 
@@ -77,6 +78,7 @@ npm start
 
 ```
 ✓ Supabase: 7 категорий, 3 менеджеров
+✓ GigaChat: GigaChat (temperature=0.3, max_tokens=300)
 ✓ Токен действителен: @your_bot
 ✅ Бот запущен (long polling)
 ```
@@ -94,6 +96,8 @@ supabase/schema.sql   — таблицы и начальные данные
 src/
   lib/supabase.js     — клиент Supabase
   services/
+    gigachatClient.js — OAuth и запросы GigaChat
+    ai.js             — свободный текст с LLM
     catalog.js        — категории и менеджеры (кэш)
     leadsRepository.js — сохранение заявок
     notify.js         — уведомления

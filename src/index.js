@@ -28,10 +28,10 @@ async function main() {
   }
   if (isAiEnabled()) {
     console.log(
-      `✓ OpenAI: ${config.openaiModel} (temperature=${config.openaiTemperature}, max_tokens=${config.openaiMaxTokens})`,
+      `✓ GigaChat: ${config.gigachatModel} (temperature=${config.gigachatTemperature}, max_tokens=${config.gigachatMaxTokens})`,
     );
   } else {
-    console.warn('⚠ OPENAI_API_KEY не задан — свободный текст без LLM (шаблон)');
+    console.warn('⚠ GIGACHAT_AUTH_KEY не задан — свободный текст без LLM (шаблон)');
   }
 
   try {

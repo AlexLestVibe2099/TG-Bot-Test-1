@@ -1,21 +1,11 @@
-import OpenAI from 'openai';
 import { config } from '../config/env.js';
 import { messages } from '../config/messages.js';
 import { buildSystemPrompt } from '../config/aiSystemPrompt.js';
 import { getCategories } from './catalog.js';
-
-let client = null;
-
-function getClient() {
-  if (!config.openaiApiKey) return null;
-  if (!client) {
-    client = new OpenAI({ apiKey: config.openaiApiKey });
-  }
-  return client;
-}
+import { createChatCompletion } from './gigachatClient.js';
 
 export function isAiEnabled() {
-  return Boolean(config.openaiApiKey);
+  return Boolean(config.gigachatAuthKey);
 }
 
 /**
@@ -23,8 +13,7 @@ export function isAiEnabled() {
  * @param {string} userMessage
  */
 export async function replyToFreeText(userMessage) {
-  const openai = getClient();
-  if (!openai) {
+  if (!isAiEnabled()) {
     return messages.freeTextFallback;
   }
 
@@ -32,20 +21,13 @@ export async function replyToFreeText(userMessage) {
     const categories = await getCategories();
     const systemPrompt = buildSystemPrompt(categories.map((c) => c.label));
 
-    const completion = await openai.chat.completions.create({
-      model: config.openaiModel,
-      temperature: config.openaiTemperature,
-      max_tokens: config.openaiMaxTokens,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-    });
-
-    const reply = completion.choices[0]?.message?.content?.trim();
-    return reply || messages.freeTextFallback;
+    return await createChatCompletion({ systemPrompt, userMessage });
   } catch (err) {
-    console.error('[AI] Ошибка OpenAI:', err.message);
+    const msg = err?.message ?? String(err);
+    console.error('[AI] Ошибка GigaChat:', msg);
+    if (/429|quota|лимит|limit/i.test(msg)) {
+      return messages.aiQuotaError;
+    }
     return messages.freeTextFallback;
   }
 }
