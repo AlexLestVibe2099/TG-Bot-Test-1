@@ -2,14 +2,14 @@
 
 Telegram-бот для сбора заявок на первичную юридическую консультацию.
 
-**Стек:** Node.js 18+, [Telegraf](https://telegraf.js.org/)
+**Стек:** Node.js 18+, [Telegraf](https://telegraf.js.org/), [Supabase](https://supabase.com/) (PostgreSQL)
 
 ## Возможности
 
 - Пошаговый сценарий записи на консультацию (FSM / Wizard Scene)
 - Сбор: категория, описание, срочность, документы, способ связи, имя, телефон
 - Подтверждение заявки перед отправкой
-- Сохранение заявки (имитация Google Sheets — лог в консоль + in-memory)
+- **Supabase:** категории, менеджеры и заявки в PostgreSQL
 - Уведомление менеджеров в Telegram
 - Ответ на свободный текст (OpenAI, если задан ключ; иначе шаблон)
 - Команды `/start`, `/help`, `/cancel`
@@ -20,69 +20,83 @@ Telegram-бот для сбора заявок на первичную юрид�
 
 - [Node.js](https://nodejs.org/) 18 или новее
 - Токен бота от [@BotFather](https://t.me/BotFather)
+- Проект [Supabase](https://supabase.com/) (бесплатный тариф подходит)
 
-### 2. Установка
+### 2. База данных Supabase
+
+1. Создайте проект на [supabase.com](https://supabase.com/).
+2. **SQL Editor** → вставьте и выполните файл `supabase/schema.sql`.
+3. **Project Settings → API** скопируйте:
+   - **Project URL** → `SUPABASE_URL`
+   - **service_role** key (secret) → `SUPABASE_SERVICE_ROLE_KEY`
+
+> `service_role` не публикуйте и не коммитьте — только в `.env`.
+
+Справочники можно менять в **Table Editor**:
+- `categories` — кнопки категорий в боте
+- `managers` — команда в карточке заявки; поле `telegram_chat_id` для уведомлений
+- `leads` — все заявки
+
+### 3. Установка
 
 ```bash
 npm install
 ```
 
-### 3. Настройка окружения
-
-Скопируйте пример и заполните переменные:
+### 4. Настройка окружения
 
 ```bash
 copy .env.example .env
 ```
 
-В `.env` укажите:
-
 | Переменная | Обязательно | Описание |
 |------------|-------------|----------|
 | `BOT_TOKEN` | да | Токен от BotFather |
-| `MANAGER_CHAT_IDS` | нет* | ID чатов менеджеров через запятую |
+| `SUPABASE_URL` | да | URL проекта Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | да | Service role key |
+| `MANAGER_CHAT_IDS` | нет* | Telegram ID менеджеров через запятую |
 | `OPENAI_API_KEY` | нет | Ключ для ответов на свободный текст |
-| `OPENAI_MODEL` | нет | Модель (по умолчанию `gpt-4o-mini`) |
+| `CATALOG_CACHE_TTL_MS` | нет | Кэш категорий/менеджеров (мс) |
 
-\* Без `MANAGER_CHAT_IDS` заявки сохраняются, но уведомления в Telegram не отправляются.
+> **Важно:** не задавайте `BOT_TOKEN` в переменных среды Windows — иначе может перекрыться `.env`.
 
-**Как узнать свой chat id:** напишите боту [@userinfobot](https://t.me/userinfobot) или [@getidsbot](https://t.me/getidsbot).
+\* Уведомления: `MANAGER_CHAT_IDS` + `managers.telegram_chat_id` из БД.
 
-### 4. Запуск
+### 5. Запуск
 
 ```bash
 npm start
 ```
 
-Режим разработки с автоперезапуском:
+Ожидаемый вывод:
 
-```bash
-npm run dev
+```
+✓ Supabase: 7 категорий, 3 менеджеров
+✓ Токен действителен: @your_bot
+✅ Бот запущен (long polling)
 ```
 
-### 5. Проверка
+### 6. Проверка
 
-1. Откройте бота в Telegram → `/start`
-2. «Записаться на консультацию» → пройдите все шаги → «Подтвердить»
-3. В консоли появится строка `[Sheets] Новая заявка: …`
-4. Менеджеру (если указан `MANAGER_CHAT_IDS`) придёт карточка заявки
+1. `/start` → «Записаться на консультацию» → пройдите сценарий → «Подтвердить»
+2. В Supabase → **Table Editor** → `leads` — новая строка
+3. Менеджеру приходит карточка в Telegram
 
 ## Структура проекта
 
 ```
+supabase/schema.sql   — таблицы и начальные данные
 src/
-  index.js           — точка входа
-  bot.js             — сборка Telegraf
-  config/            — env, категории, менеджеры, тексты
-  keyboards/         — inline- и reply-клавиатуры
-  scenes/            — сценарий консультации (Wizard)
-  handlers/          — команды, actions, свободный текст
-  services/          — AI, Sheets (stub), уведомления, отправка лида
-  utils/             — валидация, черновик заявки
+  lib/supabase.js     — клиент Supabase
+  services/
+    catalog.js        — категории и менеджеры (кэш)
+    leadsRepository.js — сохранение заявок
+    notify.js         — уведомления
+  scenes/             — сценарий консультации
 ```
 
 ## Дальнейшее развитие
 
-- Подключить реальный Google Sheets API в `src/services/sheets.js`
-- Redis для session при нескольких инстансах
-- Webhook вместо long polling для продакшена
+- Row Level Security и `anon` key вместо `service_role` при публичном API
+- Redis для FSM при нескольких инстансах
+- Webhook вместо long polling

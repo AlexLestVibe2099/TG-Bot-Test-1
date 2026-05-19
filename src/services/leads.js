@@ -1,4 +1,4 @@
-import { appendLeadToSheets } from './sheets.js';
+import { saveLead } from './leadsRepository.js';
 import { notifyManagers } from './notify.js';
 import { buildLeadRow } from '../utils/draft.js';
 
@@ -7,8 +7,8 @@ export async function submitLead(ctx, draft) {
   draft.createdAt = new Date().toISOString();
   const lead = buildLeadRow(draft);
 
-  const sheetsResult = await appendLeadToSheets(lead);
-  if (!sheetsResult.ok) {
+  const result = await saveLead(lead);
+  if (!result.ok) {
     return { ok: false };
   }
 

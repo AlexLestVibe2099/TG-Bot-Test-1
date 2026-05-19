@@ -1,18 +1,21 @@
-import { config } from '../config/env.js';
-import { getManagerLine } from '../config/managers.js';
+import { getManagerLine, getNotificationChatIds } from './catalog.js';
 import { escapeMarkdown } from '../utils/markdown.js';
 
 /** @param {import('telegraf').Telegraf['telegram']} telegram */
 export async function notifyManagers(telegram, lead) {
-  const chatIds = config.managerChatIds;
+  const chatIds = await getNotificationChatIds();
   if (!chatIds.length) {
-    console.warn('[Notify] MANAGER_CHAT_IDS не задан — уведомление менеджерам пропущено');
+    console.warn(
+      '[Notify] Нет получателей — задайте MANAGER_CHAT_IDS в .env или telegram_chat_id в таблице managers',
+    );
     return;
   }
 
   const userLink = lead.telegramUserId
     ? `[открыть чат](tg://user?id=${lead.telegramUserId})`
     : '—';
+
+  const managerLine = await getManagerLine();
 
   const text = [
     '🆕 *Новая заявка на консультацию*',
@@ -33,7 +36,7 @@ export async function notifyManagers(telegram, lead) {
     `📝 *Описание:*\n${escapeMarkdown(lead.description)}`,
     '',
     '_Команда:_',
-    getManagerLine(),
+    managerLine,
   ]
     .filter(Boolean)
     .join('\n');

@@ -1,6 +1,6 @@
 import { Scenes } from 'telegraf';
 import { messages } from '../config/messages.js';
-import { findCategoryById } from '../config/categories.js';
+import { findCategoryById, getCategories } from '../services/catalog.js';
 import {
   CB,
   categoryKeyboard,
@@ -12,8 +12,9 @@ import {
   confirmKeyboard,
   mainMenuKeyboard,
   afterSuccessKeyboard,
+  textStepNavKeyboard,
 } from '../keyboards/index.js';
-import { createEmptyDraft, formatDraftSummary } from '../utils/draft.js';
+import { createEmptyDraft } from '../utils/draft.js';
 import {
   isValidDescription,
   isValidName,
@@ -21,6 +22,7 @@ import {
 } from '../utils/validation.js';
 import { URGENCY_OPTIONS } from '../config/constants.js';
 import { submitLead } from '../services/leads.js';
+import { goBack, showConfirmStep } from './consultationNav.js';
 
 function ensureDraft(ctx) {
   if (!ctx.session.draft) {
@@ -35,46 +37,43 @@ async function leaveCancelled(ctx) {
   return ctx.scene.leave();
 }
 
-async function showConfirm(ctx) {
-  const draft = ensureDraft(ctx);
-  await ctx.reply(
-    `${messages.confirmIntro}\n\n${formatDraftSummary(draft)}\n\n${messages.confirmQuestion}`,
-    { parse_mode: 'Markdown', ...confirmKeyboard() },
-  );
-  return ctx.wizard.selectStep(8);
-}
-
 export const consultationScene = new Scenes.WizardScene(
   'consultation',
 
   // 0 — категория
   async (ctx) => {
     ensureDraft(ctx);
-    await ctx.reply(messages.chooseCategory, categoryKeyboard());
+    const categories = await getCategories();
+    if (!categories.length) {
+      await ctx.reply('Категории временно недоступны. Попробуйте позже.', mainMenuKeyboard());
+      return ctx.scene.leave();
+    }
+    await ctx.reply(messages.chooseCategory, categoryKeyboard(categories));
     return ctx.wizard.next();
   },
 
   // 1 — ждём выбор категории
   async (ctx) => {
     const data = ctx.callbackQuery?.data;
+    const categories = await getCategories();
     if (!data?.startsWith(`${CB.CATEGORY}:`)) {
       if (ctx.message?.text) {
-        await ctx.reply(messages.useCategoryButton, categoryKeyboard());
+        await ctx.reply(messages.useCategoryButton, categoryKeyboard(categories));
       }
       return;
     }
     await ctx.answerCbQuery();
     const categoryId = data.split(':')[1];
-    const category = findCategoryById(categoryId);
+    const category = await findCategoryById(categoryId);
     if (!category) {
-      await ctx.reply(messages.useCategoryButton, categoryKeyboard());
+      await ctx.reply(messages.useCategoryButton, categoryKeyboard(categories));
       return;
     }
     const draft = ensureDraft(ctx);
     draft.categoryId = category.id;
     draft.categoryLabel = category.label;
     await ctx.editMessageReplyMarkup();
-    await ctx.reply(messages.askDescription);
+    await ctx.reply(messages.askDescription, textStepNavKeyboard());
     return ctx.wizard.next();
   },
 
@@ -84,7 +83,7 @@ export const consultationScene = new Scenes.WizardScene(
     if (!text) return;
     if (!isValidDescription(text)) {
       const msg = text.length < 20 ? messages.descriptionTooShort : messages.descriptionTooLong;
-      await ctx.reply(msg);
+      await ctx.reply(msg, textStepNavKeyboard());
       return;
     }
     ensureDraft(ctx).description = text;
@@ -96,7 +95,9 @@ export const consultationScene = new Scenes.WizardScene(
   async (ctx) => {
     const data = ctx.callbackQuery?.data;
     if (!data?.startsWith(`${CB.URGENCY}:`)) {
-      if (ctx.message?.text) await ctx.reply(messages.useUrgencyButton, urgencyKeyboard());
+      if (ctx.message?.text) {
+        await ctx.reply(messages.useUrgencyButton, urgencyKeyboard());
+      }
       return;
     }
     await ctx.answerCbQuery();
@@ -116,7 +117,9 @@ export const consultationScene = new Scenes.WizardScene(
   async (ctx) => {
     const data = ctx.callbackQuery?.data;
     if (!data?.startsWith(`${CB.DOCUMENTS}:`)) {
-      if (ctx.message?.text) await ctx.reply(messages.useDocumentsButton, yesNoKeyboard(CB.DOCUMENTS));
+      if (ctx.message?.text) {
+        await ctx.reply(messages.useDocumentsButton, yesNoKeyboard(CB.DOCUMENTS));
+      }
       return;
     }
     await ctx.answerCbQuery();
@@ -135,7 +138,9 @@ export const consultationScene = new Scenes.WizardScene(
   async (ctx) => {
     const data = ctx.callbackQuery?.data;
     if (!data?.startsWith(`${CB.CONTACT}:`)) {
-      if (ctx.message?.text) await ctx.reply(messages.useContactButton, contactMethodKeyboard());
+      if (ctx.message?.text) {
+        await ctx.reply(messages.useContactButton, contactMethodKeyboard());
+      }
       return;
     }
     await ctx.answerCbQuery();
@@ -147,7 +152,7 @@ export const consultationScene = new Scenes.WizardScene(
     }
     ensureDraft(ctx).contactMethod = label;
     await ctx.editMessageReplyMarkup();
-    await ctx.reply(messages.askName);
+    await ctx.reply(messages.askName, textStepNavKeyboard());
     return ctx.wizard.next();
   },
 
@@ -155,11 +160,12 @@ export const consultationScene = new Scenes.WizardScene(
   async (ctx) => {
     const text = ctx.message?.text?.trim();
     if (!text || !isValidName(text)) {
-      await ctx.reply(messages.nameInvalid);
+      await ctx.reply(messages.nameInvalid, textStepNavKeyboard());
       return;
     }
     ensureDraft(ctx).displayName = text;
     await ctx.reply(messages.askPhone, phoneRequestKeyboard());
+    await ctx.reply(messages.phoneStepHint, textStepNavKeyboard());
     return ctx.wizard.next();
   },
 
@@ -173,18 +179,21 @@ export const consultationScene = new Scenes.WizardScene(
     }
     if (!phone) {
       await ctx.reply(messages.phoneInvalid, phoneRequestKeyboard());
+      await ctx.reply(messages.phoneStepHint, textStepNavKeyboard());
       return;
     }
     ensureDraft(ctx).phone = phone;
     await ctx.reply('Контакт получен.', removeKeyboard());
-    return showConfirm(ctx);
+    return showConfirmStep(ctx, ensureDraft(ctx));
   },
 
   // 8 — подтверждение
   async (ctx) => {
     const data = ctx.callbackQuery?.data;
     if (!data) {
-      if (ctx.message?.text) await ctx.reply(messages.useConfirmButton, confirmKeyboard());
+      if (ctx.message?.text) {
+        await ctx.reply(messages.useConfirmButton, confirmKeyboard());
+      }
       return;
     }
     await ctx.answerCbQuery();
@@ -192,7 +201,8 @@ export const consultationScene = new Scenes.WizardScene(
     if (data === CB.EDIT) {
       const from = ctx.from;
       ctx.session.draft = createEmptyDraft(from);
-      await ctx.reply(messages.chooseCategory, categoryKeyboard());
+      const cats = await getCategories();
+      await ctx.reply(messages.chooseCategory, categoryKeyboard(cats));
       return ctx.wizard.selectStep(1);
     }
 
@@ -212,6 +222,12 @@ export const consultationScene = new Scenes.WizardScene(
     return ctx.scene.leave();
   },
 );
+
+consultationScene.action(CB.BACK, async (ctx) => {
+  await ctx.answerCbQuery();
+  const draft = ensureDraft(ctx);
+  return goBack(ctx, draft);
+});
 
 consultationScene.action(CB.CANCEL, async (ctx) => {
   await ctx.answerCbQuery();
