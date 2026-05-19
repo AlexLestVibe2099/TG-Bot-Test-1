@@ -46,8 +46,8 @@ async function main() {
     process.exit(1);
   }
 
-  await bot.launch();
   console.log('✅ Бот запущен (long polling)');
+  await bot.launch();
 }
 
 main().catch((err) => {

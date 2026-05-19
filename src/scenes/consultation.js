@@ -20,6 +20,7 @@ import {
   isValidName,
   normalizePhone,
 } from '../utils/validation.js';
+import { safeAnswerCbQuery } from '../utils/callback.js';
 import { URGENCY_OPTIONS } from '../config/constants.js';
 import { submitLead } from '../services/leads.js';
 import { goBack, showConfirmStep } from './consultationNav.js';
@@ -62,7 +63,7 @@ export const consultationScene = new Scenes.WizardScene(
       }
       return;
     }
-    await ctx.answerCbQuery();
+    await safeAnswerCbQuery(ctx);
     const categoryId = data.split(':')[1];
     const category = await findCategoryById(categoryId);
     if (!category) {
@@ -100,7 +101,7 @@ export const consultationScene = new Scenes.WizardScene(
       }
       return;
     }
-    await ctx.answerCbQuery();
+    await safeAnswerCbQuery(ctx);
     const key = data.split(':')[1];
     const label = URGENCY_OPTIONS[key];
     if (!label) {
@@ -122,7 +123,7 @@ export const consultationScene = new Scenes.WizardScene(
       }
       return;
     }
-    await ctx.answerCbQuery();
+    await safeAnswerCbQuery(ctx);
     const value = data.split(':')[1];
     if (value !== 'yes' && value !== 'no') {
       await ctx.reply(messages.useDocumentsButton, yesNoKeyboard(CB.DOCUMENTS));
@@ -143,7 +144,7 @@ export const consultationScene = new Scenes.WizardScene(
       }
       return;
     }
-    await ctx.answerCbQuery();
+    await safeAnswerCbQuery(ctx);
     const method = data.split(':')[1];
     const label = method === 'call' ? 'Звонок' : method === 'telegram' ? 'Telegram' : null;
     if (!label) {
@@ -196,7 +197,7 @@ export const consultationScene = new Scenes.WizardScene(
       }
       return;
     }
-    await ctx.answerCbQuery();
+    await safeAnswerCbQuery(ctx);
 
     if (data === CB.EDIT) {
       const from = ctx.from;
@@ -224,12 +225,12 @@ export const consultationScene = new Scenes.WizardScene(
 );
 
 consultationScene.action(CB.BACK, async (ctx) => {
-  await ctx.answerCbQuery();
+  await safeAnswerCbQuery(ctx);
   const draft = ensureDraft(ctx);
   return goBack(ctx, draft);
 });
 
 consultationScene.action(CB.CANCEL, async (ctx) => {
-  await ctx.answerCbQuery();
+  await safeAnswerCbQuery(ctx);
   return leaveCancelled(ctx);
 });
