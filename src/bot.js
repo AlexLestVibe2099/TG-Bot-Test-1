@@ -1,6 +1,7 @@
 import { Telegraf, session, Scenes } from 'telegraf';
 import { config } from './config/env.js';
 import { consultationScene } from './scenes/consultation.js';
+import { questionScene } from './scenes/question.js';
 import { handleStart, handleHelp, handleCancel } from './handlers/commands.js';
 import { registerActions } from './handlers/actions.js';
 import { handleFreeText } from './handlers/freeText.js';
@@ -8,7 +9,7 @@ import { handleFreeText } from './handlers/freeText.js';
 export function createBot() {
   const bot = new Telegraf(config.botToken);
 
-  const stage = new Scenes.Stage([consultationScene]);
+  const stage = new Scenes.Stage([consultationScene, questionScene]);
 
   bot.use(session());
   bot.use(stage.middleware());

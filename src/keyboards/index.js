@@ -1,6 +1,7 @@
 import { Markup } from 'telegraf';
 
 export const CB = {
+  ASK_QUESTION: 'ask_question',
   START_CONSULT: 'start_consult',
   CATEGORY: 'cat',
   URGENCY: 'urg',
@@ -29,6 +30,7 @@ function withNav(rows, showBack = true) {
 
 export function mainMenuKeyboard() {
   return Markup.inlineKeyboard([
+    [Markup.button.callback('💬 Задать вопрос', CB.ASK_QUESTION)],
     [Markup.button.callback('📋 Записаться на консультацию', CB.START_CONSULT)],
   ]);
 }
@@ -91,6 +93,7 @@ export function confirmKeyboard() {
 
 export function afterSuccessKeyboard() {
   return Markup.inlineKeyboard([
+    [Markup.button.callback('💬 Задать вопрос', CB.ASK_QUESTION)],
     [Markup.button.callback('📋 Новая заявка', CB.NEW_REQUEST)],
     [Markup.button.callback('🏠 В меню', CB.TO_MENU)],
   ]);
