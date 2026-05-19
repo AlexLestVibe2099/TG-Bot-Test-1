@@ -2,6 +2,7 @@ import { createBot } from './bot.js';
 import { config } from './config/env.js';
 import { verifyBotToken } from './services/telegramCheck.js';
 import { verifySupabaseConnection, warmupCatalog } from './services/catalog.js';
+import { isAiEnabled } from './services/ai.js';
 
 const bot = createBot();
 
@@ -25,8 +26,12 @@ async function main() {
       '⚠ MANAGER_CHAT_IDS не задан — уведомления только на telegram_chat_id из таблицы managers',
     );
   }
-  if (!config.openaiApiKey) {
-    console.log('ℹ OPENAI_API_KEY не задан — свободный текст обрабатывается шаблоном');
+  if (isAiEnabled()) {
+    console.log(
+      `✓ OpenAI: ${config.openaiModel} (temperature=${config.openaiTemperature}, max_tokens=${config.openaiMaxTokens})`,
+    );
+  } else {
+    console.warn('⚠ OPENAI_API_KEY не задан — свободный текст без LLM (шаблон)');
   }
 
   try {

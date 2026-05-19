@@ -11,7 +11,7 @@ Telegram-бот для сбора заявок на первичную юрид�
 - Подтверждение заявки перед отправкой
 - **Supabase:** категории, менеджеры и заявки в PostgreSQL
 - Уведомление менеджеров в Telegram
-- Ответ на свободный текст (OpenAI, если задан ключ; иначе шаблон)
+- Ответ на свободный текст в главном меню (OpenAI `gpt-4o-mini`, системный промпт в `src/config/aiSystemPrompt.js`)
 - Команды `/start`, `/help`, `/cancel`
 
 ## Быстрый старт
@@ -55,8 +55,13 @@ copy .env.example .env
 | `SUPABASE_URL` | да | URL проекта Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | да | Service role key |
 | `MANAGER_CHAT_IDS` | нет* | Telegram ID менеджеров через запятую |
-| `OPENAI_API_KEY` | нет | Ключ для ответов на свободный текст |
+| `OPENAI_API_KEY` | нет* | Ключ OpenAI для свободного текста |
+| `OPENAI_MODEL` | нет | По умолчанию `gpt-4o-mini` |
+| `OPENAI_TEMPERATURE` | нет | По умолчанию `0.3` |
+| `OPENAI_MAX_TOKENS` | нет | По умолчанию `300` |
 | `CATALOG_CACHE_TTL_MS` | нет | Кэш категорий/менеджеров (мс) |
+
+\* Без `OPENAI_API_KEY` бот отвечает шаблоном, без LLM.
 
 > **Важно:** не задавайте `BOT_TOKEN` в переменных среды Windows — иначе может перекрыться `.env`.
 

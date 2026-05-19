@@ -38,4 +38,6 @@ export const config = {
   catalogCacheTtlMs: Number(process.env.CATALOG_CACHE_TTL_MS) || 5 * 60 * 1000,
   openaiApiKey: process.env.OPENAI_API_KEY?.trim() || null,
   openaiModel: process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
+  openaiTemperature: Number(process.env.OPENAI_TEMPERATURE) || 0.3,
+  openaiMaxTokens: Number(process.env.OPENAI_MAX_TOKENS) || 300,
 };
