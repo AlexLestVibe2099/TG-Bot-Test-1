@@ -57,10 +57,16 @@ async function fetchAccessToken() {
 }
 
 /**
- * @param {{ systemPrompt: string, userMessage: string }} params
+ * @param {{ systemPrompt: string, userMessage: string, history?: { role: string, content: string }[] }} params
  */
-export async function createChatCompletion({ systemPrompt, userMessage }) {
+export async function createChatCompletion({ systemPrompt, userMessage, history = [] }) {
   const accessToken = await fetchAccessToken();
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...history,
+    { role: 'user', content: userMessage },
+  ];
 
   const response = await gigachatFetch(CHAT_URL, {
     method: 'POST',
@@ -71,10 +77,7 @@ export async function createChatCompletion({ systemPrompt, userMessage }) {
     },
     body: JSON.stringify({
       model: config.gigachatModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
+      messages,
       temperature: config.gigachatTemperature,
       max_tokens: config.gigachatMaxTokens,
       stream: false,

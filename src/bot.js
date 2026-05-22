@@ -2,7 +2,7 @@ import { Telegraf, session, Scenes } from 'telegraf';
 import { config } from './config/env.js';
 import { consultationScene } from './scenes/consultation.js';
 import { questionScene } from './scenes/question.js';
-import { handleStart, handleHelp, handleCancel } from './handlers/commands.js';
+import { handleStart, handleReset, handleHelp, handleCancel } from './handlers/commands.js';
 import { registerActions } from './handlers/actions.js';
 import { handleFreeText } from './handlers/freeText.js';
 
@@ -15,6 +15,7 @@ export function createBot() {
   bot.use(stage.middleware());
 
   bot.command('start', handleStart);
+  bot.command('reset', handleReset);
   bot.command('help', handleHelp);
   bot.command('cancel', handleCancel);
 

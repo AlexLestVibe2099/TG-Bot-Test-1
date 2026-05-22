@@ -11,8 +11,9 @@ Telegram-бот для сбора заявок на первичную юрид�
 - Подтверждение заявки перед отправкой
 - **Supabase:** категории, менеджеры и заявки в PostgreSQL
 - Уведомление менеджеров в Telegram
-- Ответ на свободный текст в главном меню ([GigaChat](https://developers.sber.ru/docs/ru/gigachat/overview), модель `GigaChat`, промпт в `src/config/aiSystemPrompt.js`)
-- Команды `/start`, `/help`, `/cancel`
+- AI-ассистент «Правовой компас»: ответы на вопросы, ориентиры по ценам, защита от prompt injection ([GigaChat](https://developers.sber.ru/docs/ru/gigachat/overview), промпт в `src/config/aiSystemPrompt.js`)
+- История диалога с ассистентом (последние 10 сообщений в сессии)
+- Команды `/start`, `/reset`, `/help`, `/cancel`
 
 ## Быстрый старт
 

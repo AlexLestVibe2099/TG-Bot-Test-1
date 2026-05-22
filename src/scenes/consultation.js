@@ -24,6 +24,7 @@ import { safeAnswerCbQuery } from '../utils/callback.js';
 import { URGENCY_OPTIONS } from '../config/constants.js';
 import { submitLead } from '../services/leads.js';
 import { goBack, showConfirmStep } from './consultationNav.js';
+import { registerSceneCommands } from '../handlers/commands.js';
 
 function ensureDraft(ctx) {
   if (!ctx.session.draft) {
@@ -234,3 +235,5 @@ consultationScene.action(CB.CANCEL, async (ctx) => {
   await safeAnswerCbQuery(ctx);
   return leaveCancelled(ctx);
 });
+
+registerSceneCommands(consultationScene);

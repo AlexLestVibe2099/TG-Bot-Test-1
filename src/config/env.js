@@ -39,7 +39,7 @@ export const config = {
   gigachatAuthKey: process.env.GIGACHAT_AUTH_KEY?.trim() || null,
   gigachatModel: process.env.GIGACHAT_MODEL?.trim() || 'GigaChat',
   gigachatScope: process.env.GIGACHAT_SCOPE?.trim() || 'GIGACHAT_API_PERS',
-  gigachatTemperature: Number(process.env.GIGACHAT_TEMPERATURE) || 0.3,
-  gigachatMaxTokens: Number(process.env.GIGACHAT_MAX_TOKENS) || 300,
+  gigachatTemperature: Number(process.env.GIGACHAT_TEMPERATURE ?? 0.3),
+  gigachatMaxTokens: Number(process.env.GIGACHAT_MAX_TOKENS ?? 500),
   gigachatInsecureSsl: process.env.GIGACHAT_INSECURE_SSL !== 'false',
 };
