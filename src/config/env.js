@@ -42,4 +42,7 @@ export const config = {
   gigachatTemperature: Number(process.env.GIGACHAT_TEMPERATURE ?? 0.3),
   gigachatMaxTokens: Number(process.env.GIGACHAT_MAX_TOKENS ?? 500),
   gigachatInsecureSsl: process.env.GIGACHAT_INSECURE_SSL !== 'false',
+  ragEnabled: process.env.RAG_ENABLED !== 'false',
+  ragMatchCount: Number(process.env.RAG_MATCH_COUNT ?? 5),
+  ragMinSimilarity: Number(process.env.RAG_MIN_SIMILARITY ?? 0.45),
 };

@@ -3,6 +3,7 @@ import { config } from './config/env.js';
 import { verifyBotToken } from './services/telegramCheck.js';
 import { verifySupabaseConnection, warmupCatalog } from './services/catalog.js';
 import { isAiEnabled } from './services/ai.js';
+import { isRagEnabled, warmupRag } from './services/rag.js';
 
 const bot = createBot();
 
@@ -32,6 +33,20 @@ async function main() {
     );
   } else {
     console.warn('⚠ GIGACHAT_AUTH_KEY не задан — свободный текст без LLM (шаблон)');
+  }
+
+  if (isRagEnabled() && isAiEnabled()) {
+    try {
+      console.log(
+        `ℹ RAG: поиск top-${config.ragMatchCount}, порог ${config.ragMinSimilarity} (прогрев модели…)`,
+      );
+      await warmupRag();
+      console.log('✓ RAG: база знаний подключена');
+    } catch (err) {
+      console.warn('⚠ RAG: прогрев не удался — первый вопрос может быть медленнее:', err.message);
+    }
+  } else if (!isRagEnabled()) {
+    console.log('ℹ RAG отключён (RAG_ENABLED=false)');
   }
 
   try {

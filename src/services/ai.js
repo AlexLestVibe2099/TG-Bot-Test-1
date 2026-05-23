@@ -8,6 +8,7 @@ import {
   clearChatHistory,
   getChatHistoryForApi,
 } from '../utils/chatHistory.js';
+import { isRagEnabled, retrieveForQuestion } from './rag.js';
 
 export function isAiEnabled() {
   return Boolean(config.gigachatAuthKey);
@@ -30,7 +31,20 @@ export async function replyWithAi(ctx, userMessage, options = {}) {
 
   try {
     const categories = await getCategories();
-    const systemPrompt = buildSystemPrompt(categories.map((c) => c.label));
+    let ragContext = '';
+    if (isRagEnabled()) {
+      try {
+        const { contextText } = await retrieveForQuestion(ctx, userMessage);
+        ragContext = contextText;
+      } catch (ragErr) {
+        console.error('[RAG] Ошибка поиска:', ragErr?.message ?? ragErr);
+        ragContext = '(Поиск по базе знаний временно недоступен.)';
+      }
+    }
+    const systemPrompt = buildSystemPrompt(
+      categories.map((c) => c.label),
+      ragContext,
+    );
     const history = options.resetHistory ? [] : getChatHistoryForApi(ctx.session);
 
     const reply = await createChatCompletion({
@@ -61,7 +75,7 @@ export async function replyToFreeText(userMessage) {
 
   try {
     const categories = await getCategories();
-    const systemPrompt = buildSystemPrompt(categories.map((c) => c.label));
+    const systemPrompt = buildSystemPrompt(categories.map((c) => c.label), '');
     return await createChatCompletion({ systemPrompt, history: [], userMessage });
   } catch (err) {
     const msg = err?.message ?? String(err);
